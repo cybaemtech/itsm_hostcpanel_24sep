@@ -1,0 +1,10 @@
+# Uploads directory security
+<Files "*">
+    Order allow,deny
+    Allow from all
+</Files>
+
+<FilesMatch "\.(php|php3|php4|php5|phtml|pl|py|jsp|asp|sh|cgi)$">
+    Order deny,allow
+    Deny from all
+</FilesMatch>

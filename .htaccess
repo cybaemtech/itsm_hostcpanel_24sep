@@ -1,0 +1,74 @@
+# cPanel-optimized .htaccess for ITSM Application
+RewriteEngine On
+
+# Handle CORS preflight OPTIONS requests
+RewriteCond %{REQUEST_METHOD} OPTIONS
+RewriteRule ^(.*)$ $1 [R=200,L]
+
+# API Routes - Handle both with and without .php extension
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^api/(.+)$ php/api/$1.php [QSA,L]
+
+# Remove duplicate /itsm_app paths
+RewriteCond %{THE_REQUEST} ^[A-Z]{3,}\s/+itsm_app/+itsm_app/+ [NC]
+RewriteRule ^itsm_app/itsm_app/(.*) /itsm_app/$1 [R=301,L]
+
+# Remove duplicate /itsm_app from URL
+RewriteCond %{THE_REQUEST} ^[A-Z]{3,}\s/+itsm_app/+itsm_app/+ [NC]
+RewriteRule ^itsm_app/itsm_app/(.*) /itsm_app/$1 [R=301,L]
+
+# Remove trailing slashes
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)/$ /$1 [L,R=301]
+
+# Frontend Routes - Serve React app
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_URI} !^/php/
+RewriteCond %{REQUEST_URI} !^/uploads/
+RewriteRule ^itsm_app/(.*) client/dist/index.html [QSA,L]
+RewriteRule ^(.*)$ client/dist/index.html [QSA,L]
+
+# Security Headers
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options nosniff
+    Header always set X-Frame-Options DENY
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    
+    # CORS Headers for API requests
+    SetEnvIf Origin "^https?://(www\.)?(cybaemtech\.net|localhost)(:5173)?$" ORIGIN_SUB_DOMAIN=$1$2$3
+    Header always set Access-Control-Allow-Origin "%{ORIGIN_SUB_DOMAIN}e" env=ORIGIN_SUB_DOMAIN
+    Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+    Header always set Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With"
+    Header always set Access-Control-Allow-Credentials "true"
+    Header always set Vary "Origin"
+</IfModule>
+
+# PHP Settings for cPanel
+<IfModule mod_php7.c>
+    php_flag display_errors Off
+    php_flag log_errors On
+    php_value error_log error_log
+    php_value session.cookie_httponly 1
+    php_value session.cookie_secure 1
+    php_value session.use_strict_mode 1
+</IfModule>
+
+# File Security
+<Files "*.php">
+    Order allow,deny
+    Allow from all
+</Files>
+
+<Files ".htaccess">
+    Order deny,allow
+    Deny from all
+</Files>
+
+# Prevent access to sensitive files
+<FilesMatch "\.(sql|log|conf|env)$">
+    Order deny,allow
+    Deny from all
+</FilesMatch>
