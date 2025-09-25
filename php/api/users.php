@@ -185,6 +185,8 @@ function handleCreateUser($request) {
 function handleUpdateUser($userId, $request) {
     requireAuth();
     
+    error_log("Update user request for ID $userId: " . json_encode($request));
+    
     if (!$userId) {
         jsonResponse(['error' => 'User ID is required'], 400);
     }
@@ -208,35 +210,35 @@ function handleUpdateUser($userId, $request) {
     $updateData = [];
     
     // Fields that users can update about themselves
-    if (isset($request['name'])) {
+    if (isset($request['name']) && trim($request['name']) !== '') {
         $updateData['name'] = sanitizeInput($request['name']);
     }
-    if (isset($request['email'])) {
+    if (isset($request['email']) && trim($request['email']) !== '') {
         $email = sanitizeInput($request['email']);
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             jsonResponse(['error' => 'Invalid email format'], 400);
         }
         $updateData['email'] = $email;
     }
-    if (isset($request['companyName'])) {
+    if (isset($request['companyName']) && trim($request['companyName']) !== '') {
         $updateData['company_name'] = sanitizeInput($request['companyName']);
     }
-    if (isset($request['department'])) {
+    if (isset($request['department']) && trim($request['department']) !== '') {
         $updateData['department'] = sanitizeInput($request['department']);
     }
-    if (isset($request['contactNumber'])) {
+    if (isset($request['contactNumber']) && trim($request['contactNumber']) !== '') {
         $updateData['contact_number'] = sanitizeInput($request['contactNumber']);
     }
-    if (isset($request['designation'])) {
+    if (isset($request['designation']) && trim($request['designation']) !== '') {
         $updateData['designation'] = sanitizeInput($request['designation']);
     }
     
     // Fields only admins can update
     if ($currentUserRole === 'admin') {
-        if (isset($request['username'])) {
+        if (isset($request['username']) && trim($request['username']) !== '') {
             $updateData['username'] = sanitizeInput($request['username']);
         }
-        if (isset($request['role'])) {
+        if (isset($request['role']) && trim($request['role']) !== '') {
             $role = sanitizeInput($request['role']);
             if (!in_array($role, ['admin', 'agent', 'user'])) {
                 jsonResponse(['error' => 'Invalid role'], 400);
@@ -255,6 +257,7 @@ function handleUpdateUser($userId, $request) {
     }
     
     if (empty($updateData)) {
+        error_log("Update user error: No valid fields to update. Request: " . json_encode($request));
         jsonResponse(['error' => 'No valid fields to update'], 400);
     }
     
